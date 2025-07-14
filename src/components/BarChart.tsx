@@ -10,12 +10,15 @@ interface BarChartProps {
   height?: number;
 }
 
-const COLORS = ['#4285F4', '#FB8C00'];
+const getColorPalette = (n: number) => {
+  // Use d3.schemeTableau10, fallback to d3.interpolateRainbow
+  if ((d3 as any).schemeTableau10 && n <= 10) return (d3 as any).schemeTableau10;
+  return Array.from({ length: n }, (_, i) => d3.interpolateRainbow(i / n));
+};
 
 type D3StackDatum = [number, number] & { data?: { quarter?: string }; quarter?: string };
 
-
-const BarChart: React.FC<BarChartProps> = ({ data, quarters, custTypes, width = 420, height = 260 }) => {
+const BarChart: React.FC<BarChartProps & { colors: string[] }> = ({ data, quarters, custTypes, width = 360, height = 260, colors }) => {
   const ref = useRef<SVGSVGElement | null>(null);
   const theme = useTheme();
 
@@ -47,7 +50,7 @@ const BarChart: React.FC<BarChartProps> = ({ data, quarters, custTypes, width = 
     const x = d3.scaleBand()
       .domain(quarters)
       .range([0, w])
-      .padding(0.2);
+      .padding(0.45);
     const y = d3.scaleLinear()
       .domain([0, d3.max(stackData, d => custTypes.reduce((sum, t) => sum + (typeof d[t] === 'number' ? (d[t] as number) : Number(d[t])), 0)) || 0])
       .nice()
@@ -69,7 +72,7 @@ const BarChart: React.FC<BarChartProps> = ({ data, quarters, custTypes, width = 
       .data(stackedData)
       .enter().append('g')
       .attr('class', 'layer')
-      .attr('fill', (d, i) => COLORS[i % COLORS.length])
+      .attr('fill', (d, i) => colors[i % colors.length])
       .selectAll('rect')
       .data((d, i) => d.map((item, idx) => ({
         ...item,
@@ -145,4 +148,26 @@ const BarChart: React.FC<BarChartProps> = ({ data, quarters, custTypes, width = 
 
 };
 
-export default BarChart;
+// Legend rendering
+const Legend: React.FC<{ custTypes: string[], colors: string[] }> = ({ custTypes, colors }) => (
+  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
+    {custTypes.map((type, i) => (
+      <span key={type} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ display: 'inline-block', width: 18, height: 18, borderRadius: 6, background: colors[i % colors.length], border: '1.5px solid #e3e9f7', marginRight: 5 }} />
+        <span style={{ fontSize: 14, color: '#444', fontWeight: 500 }}>{type}</span>
+      </span>
+    ))}
+  </div>
+);
+
+const BarChartWithLegend: React.FC<BarChartProps> = (props) => {
+  const colors = getColorPalette(props.custTypes.length);
+  return (
+    <div>
+      <BarChart {...props} colors={colors} />
+      <Legend custTypes={props.custTypes} colors={colors} />
+    </div>
+  );
+};
+
+export default BarChartWithLegend;

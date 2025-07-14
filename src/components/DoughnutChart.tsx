@@ -8,11 +8,16 @@ interface DoughnutChartProps {
   height?: number;
 }
 
-const COLORS = ['#4285F4', '#FB8C00'];
 
-const DoughnutChart: React.FC<DoughnutChartProps> = ({ data, width = 180, height = 180 }) => {
+const getColorPalette = (n: number) => {
+  if ((d3 as any).schemeTableau10 && n <= 10) return (d3 as any).schemeTableau10;
+  return Array.from({ length: n }, (_, i) => d3.interpolateRainbow(i / n));
+};
+
+const DoughnutChart: React.FC<DoughnutChartProps & { colors: string[] }> = ({ data, width = 180, height = 180, colors }) => {
   const ref = useRef<SVGSVGElement | null>(null);
   const theme = useTheme();
+  const COLORS = colors;
   useEffect(() => {
     if (!ref.current) return;
     let tooltip: d3.Selection<HTMLDivElement, unknown, HTMLElement, any> | undefined;
@@ -129,18 +134,32 @@ const DoughnutChart: React.FC<DoughnutChartProps> = ({ data, width = 180, height
           style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
         ></svg>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 24, marginTop: 12, flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-          <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: COLORS[0], border: '1px solid #eee' }}></span>
-          <span style={{ fontSize: 13, color: '#333', whiteSpace: 'nowrap' }}>Existing Customer</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-          <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: COLORS[1], border: '1px solid #eee' }}></span>
-          <span style={{ fontSize: 13, color: '#333', whiteSpace: 'nowrap' }}>New Customer</span>
-        </div>
-      </div>
+
     </div>
   );
 };
 
-export default DoughnutChart;
+// Legend rendering
+const Legend: React.FC<{ labels: string[]; colors: string[] }> = ({ labels, colors }) => (
+  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 18, justifyContent: 'center' }}>
+    {labels.map((label, i) => (
+      <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ display: 'inline-block', width: 18, height: 18, borderRadius: 6, background: colors[i % colors.length], border: '1.5px solid #e3e9f7', marginRight: 5 }} />
+        <span style={{ fontSize: 14, color: '#444', fontWeight: 500 }}>{label}</span>
+      </span>
+    ))}
+  </div>
+);
+
+
+const DoughnutChartWithLegend: React.FC<DoughnutChartProps> = (props) => {
+  const colors = getColorPalette(props.data.length);
+  return (
+    <div>
+      <DoughnutChart {...props} colors={colors} />
+      <Legend labels={props.data.map(d => d.label)} colors={colors} />
+    </div>
+  );
+};
+
+export default DoughnutChartWithLegend;
