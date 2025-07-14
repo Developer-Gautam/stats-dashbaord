@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(135deg, #f5f6fa 0%, #e3e9f7 100%);
+  min-height: 100vh;
+}
+
+.table-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  padding: 24px;
+  margin-top: 24px;
+}
+
+th, td {
+  border-radius: 6px;
+  padding: 10px 18px;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
