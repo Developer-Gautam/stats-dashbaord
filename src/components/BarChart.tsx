@@ -62,7 +62,7 @@ const BarChart: React.FC<BarChartProps & { colors: string[] }> = ({ data, quarte
     const w = containerWidth - margin.left - margin.right;
     const h = height - margin.top - margin.bottom;
     const svg = d3.select(ref.current)
-      .attr('width', width || 260)
+      .attr('width', effectiveWidth)
       .attr('height', height)
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
@@ -157,6 +157,17 @@ const BarChart: React.FC<BarChartProps & { colors: string[] }> = ({ data, quarte
     // Tooltip handlers are now attached to rects above
     return () => { tooltip.remove(); };
   }, [data, width, height, theme]);
+  // Debug logs
+  console.log('BarChart render:', { containerWidth, width, dataLength: data?.length, quarters, custTypes });
+
+  // Defensive: fallback width if containerWidth is 0 or undefined
+  const effectiveWidth = (containerWidth && containerWidth > 10) ? containerWidth : (width || 260);
+
+  // Defensive: don't render if data is empty or missing
+  if (!data || data.length === 0) {
+    return <div ref={containerRef} style={{ width: '100%', minHeight: height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: 16 }}>No data</div>;
+  }
+
   return (
     <div ref={containerRef} style={{ width: '100%' }}>
       <svg ref={ref} style={{ width: '100%', height: height, minHeight: height }} />
