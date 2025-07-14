@@ -177,7 +177,7 @@ function DashboardContent() {
                     >
                       {config.type === "timeseries" && (
                         <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'stretch', md: 'flex-start' }} justifyContent="space-between" gap={{ xs: 2, md: 4 }} width="100%" minWidth={0}>
-                          <Box flex={2} minWidth={0} width={{ xs: '100%', md: '0' }} maxWidth={{ xs: '100%', md: 480 }} sx={{ overflowX: 'auto' }}>
+                          <Box flex={2} minWidth={0} width="100%" maxWidth={480} sx={{ overflowX: 'auto' }}>
                             <BarChart data={config.barData} quarters={config.quarters} custTypes={config.categories} />
                           </Box>
                           <Box flex={1} minWidth={0} maxWidth={320} width={{ xs: '100%', md: '320px' }} sx={{ mx: 'auto' }}>
