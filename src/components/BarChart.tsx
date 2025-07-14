@@ -18,18 +18,51 @@ const getColorPalette = (n: number) => {
 
 type D3StackDatum = [number, number] & { data?: { quarter?: string }; quarter?: string };
 
-const BarChart: React.FC<BarChartProps & { colors: string[] }> = ({ data, quarters, custTypes, width = 360, height = 260, colors }) => {
+const BarChart: React.FC<BarChartProps & { colors: string[] }> = ({ data, quarters, custTypes, width, height = 220, colors }) => {
   const ref = useRef<SVGSVGElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = React.useState<number>(width || 260);
   const theme = useTheme();
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const resizeObserver = new window.ResizeObserver(entries => {
+      for (let entry of entries) {
+        if (entry.contentRect) {
+          setContainerWidth(entry.contentRect.width);
+        }
+      }
+    });
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!ref.current) return;
     d3.select(ref.current).selectAll('*').remove();
     const margin = { top: 20, right: 20, bottom: 40, left: 40 };
-    const w = width - margin.left - margin.right;
+    const w = containerWidth - margin.left - margin.right;
     const h = height - margin.top - margin.bottom;
     const svg = d3.select(ref.current)
-      .attr('width', width)
+      .attr('width', containerWidth || 260)
+      .attr('height', height)
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // ... rest of D3 code remains unchanged ...
+
+    // Tooltip handlers are now attached to rects above
+    return () => { d3.select('body').selectAll('.bar-tooltip').remove(); };
+  }, [data, containerWidth, height, theme]);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    d3.select(ref.current).selectAll('*').remove();
+    const margin = { top: 20, right: 20, bottom: 40, left: 40 };
+    const w = containerWidth - margin.left - margin.right;
+    const h = height - margin.top - margin.bottom;
+    const svg = d3.select(ref.current)
+      .attr('width', width || 260)
       .attr('height', height)
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
@@ -50,7 +83,7 @@ const BarChart: React.FC<BarChartProps & { colors: string[] }> = ({ data, quarte
     const x = d3.scaleBand()
       .domain(quarters)
       .range([0, w])
-      .padding(0.45);
+      .padding(0.15);
     const y = d3.scaleLinear()
       .domain([0, d3.max(stackData, d => custTypes.reduce((sum, t) => sum + (typeof d[t] === 'number' ? (d[t] as number) : Number(d[t])), 0)) || 0])
       .nice()
@@ -58,7 +91,7 @@ const BarChart: React.FC<BarChartProps & { colors: string[] }> = ({ data, quarte
 
     // Y axis
     svg.append('g')
-      .call(d3.axisLeft(y).tickSize(-w).tickPadding(8).tickFormat(d => `$${(+d/1000).toFixed(2)}K`))
+      .call(d3.axisLeft(y).tickSize(-w).tickPadding(8).tickFormat((d, i) => i === 0 ? `$${(Number(d)/1000).toFixed(2)}K` : ''))
       .selectAll('line')
       .attr('stroke', '#eee');
 
@@ -108,26 +141,6 @@ const BarChart: React.FC<BarChartProps & { colors: string[] }> = ({ data, quarte
         d3.select(this).attr('stroke', null).attr('stroke-width', null);
       });
 
-    // Value labels
-    svg.selectAll('g.layer')
-      .data(stackedData)
-      .enter().append('g')
-      .attr('fill', '#fff')
-      .attr('font-size', 12)
-      .attr('font-weight', 600)
-      .selectAll('text')
-      .data((d, i) => d.map((item, idx) => ({
-        value: item[1] - item[0],
-        y0: item[0],
-        y1: item[1],
-        quarter: quarters[idx],
-        type: custTypes[i]
-      })))
-      .enter().append('text')
-      .attr('x', d => (x(d.quarter) || 0) + x.bandwidth() / 2)
-      .attr('y', d => y(d.y1) + (y(d.y0) - y(d.y1)) / 2 + 4)
-      .attr('text-anchor', 'middle')
-      .text(d => d.value > 0 ? `$${(d.value/1000).toFixed(2)}K` : '');
 
     // Tooltip
     const tooltip = d3.select('body').append('div')
@@ -144,7 +157,11 @@ const BarChart: React.FC<BarChartProps & { colors: string[] }> = ({ data, quarte
     // Tooltip handlers are now attached to rects above
     return () => { tooltip.remove(); };
   }, [data, width, height, theme]);
-  return <svg ref={ref} style={{ width: '100%', height: '100%', minHeight: height }}></svg>;
+  return (
+    <div ref={containerRef} style={{ width: '100%' }}>
+      <svg ref={ref} style={{ width: '100%', height: height, minHeight: height }} />
+    </div>
+  );
 
 };
 
